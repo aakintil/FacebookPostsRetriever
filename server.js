@@ -5,8 +5,6 @@
 var express = require('express'); // call express
 var app = express(); // define our app using express
 var bodyParser = require('body-parser');
-var facebookRequest = require('./facebook-posts-request'); 
-console.log( facebookRequest )
 // configure app to use bodyParser()
 // this will let us get the data from a POST
 app.use(bodyParser.urlencoded({

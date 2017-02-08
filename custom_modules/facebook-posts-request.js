@@ -9,10 +9,25 @@
 //    console.log(body) // Show the HTML for the Google homepage.
 //  }
 //})
-var exports = module.exports = {};
-exports.sayHelloInEnglish = function () {
-  return "HELLO";
-};
-exports.sayHelloInSpanish = function () {
-  return "Hola";
-};
+
+// Module
+var facebookRequest = module.exports = {
+    init: function() {
+        
+    }
+}, // creating the facebook request module
+
+    // Dependencies
+    Datastore = require('nedb'), // to store our data in a customized database if necessary
+    _ = require('underscore'), // underscore for helper functions
+    moment = require('moment'), // to reformat date/time so we can understand
+    fs = require('fs'), // to write to a file 
+    request = require('request'), // to make actual requests to the facebook api
+
+    // Custom variables
+    indexOf = [].indexOf || function (item) {
+        for (var i = 0, l = this.length; i < l; i++) {
+            if (i in this && this[i] === item) return i;
+        }
+        return -1;
+    }; 

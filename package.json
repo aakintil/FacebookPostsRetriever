@@ -2,7 +2,7 @@
   "name": "facebook-posts-receiver",
   "version": "0.0.1",
   "description": "pulling facebook posts from a secret group | scraping facebook posts url with npm html-metadata module | exporting results to a json file\"",
-  "main": "facebook-posts-request.js",
+  "main": "init.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -15,8 +15,9 @@
 var Datastore = require('nedb'), // to store our data in a customized database if necessary
     _ = require('underscore'), // underscore for helper functions
     moment = require('moment'), // to reformat date/time so we can understand
-    fs = require('fs'), // to write to a file 
+    fs = require('file-system'), // to write to a file 
     request = require('request'), // to make actual requests to the facebook api
+    pathExists = require('path-exists'), // to check whether a file exists or not
 
     // Custom variables
     indexOf = [].indexOf || function (item) {
@@ -88,11 +89,103 @@ FacebookRequest.prototype = {
                 process.exit();
             }
         })
-    }, 
-    
+    },
+
     // where the magic happens. recursive 
-    retrievePostsFromGroup: function( groupID, url ) {
-        
+    retrievePostsFromGroup: function (groupID, url) {
+        // check json file for the most recent data
+        var self = this;
+        pathExists('data/saveMyInbox.json').then(exists => {
+            // if it's there then we already have some data, and we can just call the get groups to see if there are new posts
+            if (exists) {
+                // get group status
+                // see if there are any unread posts
+                // this.untilTime = moment(jsonFile[0].created_time) // figure out format
+                // self.getRecentPosts( untilTime ); 
+            }
+            // else begin looping through the entirety of the facebook posts
+            else {
+                //                self.saveCurrentGroupId(groups.data[i].id);
+                //                console.log("---- ASYNCHRONOUS CALL ... #3 is actually called before #2 ----");
+                //                console.log("2. successfully got group id...moving on... \n");
+                //                var getPostsURL = self.timeParamUrl();
+                var url = "";
+                self.getAllPosts(url);
+            }
+        });
+    },
+
+    storeFacebookPosts: function (posts) {
+        console.log("storing facebook posts");
+    },
+
+    getAllPosts: function (url) {
+        console.log("getting all posts");
+        /*
+        function sortedUpdated(posts) {
+            return _.pluck(posts.data, 'updated_time').sort();
+        }
+         */
+        // ** Variables **
+        // custom sort by function
+        var sortBy = function (posts, type) {
+                return _.pluck(posts, type).sort();
+            },
+            vars = this.defaults;
+
+        /*
+                    return request(url, function (error, response, body) {
+                        // grab the body response
+                        posts = JSON.parse(body);
+                        // catch and scream about errors...
+                        // don't understand what the indexOf.call does though
+                        if (error) {
+                            console.log("error ", error);
+                            process.exit();
+                        } else if (indexOf.call(groups, "error") >= 0) {
+                            console.log("posts error ", groups.error);
+                            process.exit();
+                        }
+                        // number of posts fetched
+                        var numPostsFetched = posts.data.length;
+                        // now we have a list of groups
+                        // find save mah inbox group
+                        // save it's id so we can create an actual req to SMI posts
+                        console.log("\n5. looping through posts data \n");
+                        if (numPostsFetched > 0) {
+                            // save items into db
+                            for (var i = 0; i < posts.data.length; i++) {
+                                self.exportDatabase.push(posts.data[i]);
+                                console.log('\n newly inserted post ', posts.data[i].id)
+                                    // appDB.insert( posts.data[ i ], function( err, newPost ) {
+                                    //     console.log( '\n newly inserted post ', newPost.id )
+                                    // });    
+                            }
+                            var newUntil = moment(_.first(sortedUpdated(posts))).unix() - 1,
+                                newUntilDate = moment(_.first(sortedUpdated(posts))).format("dddd, MMMM Do YYYY, h:mm:ss a"),
+                                newURL = self.timeParamUrl(undefined, newUntil);
+                            // console.log( ' \n ====== current posts fetch length [ ', numPostsFetched, ' ] ====== ' ); 
+                            console.log(" \n getting posts from: [", 0, "]   --> until : [", newUntilDate, "] ");
+                            // console.log( ' \n hopefully a newer url with date [ ', newURL, ' ]' ); 
+                            currentPostIndex++;
+                            self.getPostsForGroup(newURL);
+                        } else {
+                            console.log("\nfinished grabbing all posts");
+                            console.log("\n....about to export to a file");
+                            fs.writeFile('db/test.js', JSON.stringify(self.exportDatabase), function (err) {
+                                if (err) {
+                                    console.error('YOU FUCKED UP');
+                                } else {
+                                    console.log("Output saved to /test.js");
+                                    process.exit()
+                                }
+                            });
+                        };
+                    */
+    },
+
+    getRecentPosts: function (untilTime) {
+        console.log("getting recent posts")
     }
 }
 

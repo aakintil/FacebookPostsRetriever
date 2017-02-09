@@ -10,3 +10,4 @@ pulling facebook group posts with node and scraping them for further metadata wi
 ## Installation 
 - run "npm install" 
 - run "node init.js" or "nodemon" 
+-- IF you run "nodemon", be careful because the process will keep looping

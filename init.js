@@ -1,4 +1,8 @@
 var facebookRequest = require('./custom_modules/facebook-posts-request'),
-    _FR = new facebookRequest();
+    metadata = require('./custom_modules/metadata.js')
+_FR = new facebookRequest();
 
-_FR.retrievePostsFromGroup();
+//_FR.retrievePostsFromGroup();
+
+_MD = new metadata;
+console.log(_MD)

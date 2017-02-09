@@ -17,15 +17,16 @@ var Datastore = require('nedb'), // to store our data in a customized database i
     moment = require('moment'), // to reformat date/time so we can understand
     fs = require('file-system'), // to write to a file 
     request = require('request'), // to make actual requests to the facebook api
-    pathExists = require('path-exists'), // to check whether a file exists or not
+    pathExists = require('path-exists'), // to check whether a file exists or not, 
+    childProcess = require('child_process')
 
-    // Custom variables
-    indexOf = [].indexOf || function (item) {
-        for (var i = 0, l = this.length; i < l; i++) {
-            if (i in this && this[i] === item) return i;
-        }
-        return -1;
-    };
+// Custom variables
+indexOf = [].indexOf || function (item) {
+    for (var i = 0, l = this.length; i < l; i++) {
+        if (i in this && this[i] === item) return i;
+    }
+    return -1;
+};
 
 
 function FacebookRequest() {
@@ -38,11 +39,14 @@ function FacebookRequest() {
         },
         count: 0,
         accessToken: 'EAAP77vQBZAhMBAPim8DOAs3ZCHZC2NPzNGDbMZCf6ISWc7rap1hiq1G6ikWZAFuSYVfo570BQlcZC34ZCESDh934iAZA2CgfUKbxfkwZB9wngklszAW3YEmcJVXZClm4urfZCDZAgd4NMs8sJufgIaeRUOJb', // need this in order to get ANY posts. should work and should never expire
-        tempAccessToken: 'EAACEdEose0cBAAEgcntLtIWfxFneC8hCTB8ZAfUdAzEvx6YcZAAY0o2JSKNkcX6ZAnZCClVxPQ8npqAWTctNRKm2oLZAyR0nxjOpy62HaFZAMM3EZA75ZAQ14txtR7ZCvxLyOfLfmrKGoelrL7ifgKiAkLx7hoXILJrEp9NKTOFbIl9QeNsXMRGYOtguwdAwA45cZD', // need to go to https://developers.facebook.com/tools/explorer/ & change the access token every 2 hours 
-        retrievedPosts: [],
+        // works for getting posts, doesn't work for getting more info about groups
+        tempAccessToken: 'EAACEdEose0cBABTbpZBQURYmfR2uZCLsZAKfnTVEJDpum45Hd0HsC9iPNriOD5qCHMgXWAGS4fdFjE6kzduRZAVZCQqoge25LnDlZBbqgvsWmWSaYEE8KHChUxKvqDm77pWhtPdQdM1F8WjgOZCouUUvMSZBGbx9yLeWg9mxkcclRKupvwkEALuARPSylQKtNVcZD', // need to go to https://developers.facebook.com/tools/explorer/ & change the access token every 2 hours || works for getting more group info ( like unread posts ), but isn't perminent 
+        retrievedPostsArray: [],
         newUntil: null,
         getGroupURL: 'https://graph.facebook.com/me/groups?access_token=',
-        currentPostIndex: ''
+        currentPostIndex: '',
+        numberOfRetrievedPosts: 0,
+        postsJSONPath: 'data/saveMyInbox.json'
     }
 
     // apparently it's not needed, but it felt weird without it
@@ -61,12 +65,30 @@ FacebookRequest.prototype = {
     // logic could be that if there are any unread messages, then update the data. 
     checkForUpdates: function () {
         var url = this.defaults['getGroupURL'] + this.defaults['tempAccessToken'],
-            group_id = this.group_id,
+            groupID = this.defaults.groupID,
             self = this;
         return request(url, function (error, response, body) {
             // grab the body response
             // contains all groups and looks like...
-            groups = JSON.parse(body);
+            var g = JSON.parse(body),
+                groups = g.data;
+
+            // catch and scream about errors...
+            // don't understand what the indexOf.call does though
+            if (error) {
+                console.log("error ", error);
+                process.exit();
+            } else if (indexOf.call(groups, "error") >= 0) {
+                console.log("posts error ", groups.error);
+                process.exit();
+            }
+
+            //            console.log( groups)
+            for (var i in groups) {
+                if (groups[i].id === self.defaults.groupID) {
+                    console.log(groups[i])
+                }
+            }
             /*
                 data returns something of the sorts
                     { 
@@ -79,40 +101,43 @@ FacebookRequest.prototype = {
                     }
             */
 
-            // catch and scream about errors...
-            // don't understand what the indexOf.call does though
-            if (error) {
-                console.log("error ", error);
-                process.exit();
-            } else if (indexOf.call(groups, "error") >= 0) {
-                console.log("posts error ", groups.error);
-                process.exit();
-            }
         })
     },
 
     // where the magic happens. recursive 
     retrievePostsFromGroup: function (groupID, url) {
+        var file = this.defaults.postsJSONPath,
+            url = this.generateDynamicURL();
+        this.getAllPosts(url);
+
+        // ---- TODO ----
+        // when we figure out how to get new posts do something like this
+        /*
         // check json file for the most recent data
-        var self = this;
-        pathExists('data/saveMyInbox.json').then(exists => {
+        pathExists(file).then(exists => {
             // if it's there then we already have some data, and we can just call the get groups to see if there are new posts
             if (exists) {
                 // get group status
                 // see if there are any unread posts
                 // this.untilTime = moment(jsonFile[0].created_time) // figure out format
                 // self.getRecentPosts( untilTime ); 
+                
+                // store the results
+                // have to specify UTF8 or else it'll return buffers...which i dunno how to deal with
+                var posts = JSON.parse(fs.readFileSync(file, 'utf8'));
+
+                // console.log(self.defaults.retrievedPostsArray)
+                self.checkForUpdates();
             }
             // else begin looping through the entirety of the facebook posts
             else {
-                //                self.saveCurrentGroupId(groups.data[i].id);
                 //                console.log("---- ASYNCHRONOUS CALL ... #3 is actually called before #2 ----");
                 //                console.log("2. successfully got group id...moving on... \n");
-                //                var getPostsURL = self.timeParamUrl();
-                var url = "";
+                var url = self.generateDynamicURL();
                 self.getAllPosts(url);
             }
         });
+        */
     },
 
     storeFacebookPosts: function (posts) {
@@ -128,64 +153,110 @@ FacebookRequest.prototype = {
          */
         // ** Variables **
         // custom sort by function
-        var sortBy = function (posts, type) {
-                return _.pluck(posts, type).sort();
+        var sortBy = function (posts, attr) {
+                return _.pluck(posts, attr).sort();
             },
-            vars = this.defaults;
+            vars = this.defaults,
+            p = "",
+            posts = [],
+            self = this;
 
-        /*
-                    return request(url, function (error, response, body) {
-                        // grab the body response
-                        posts = JSON.parse(body);
-                        // catch and scream about errors...
-                        // don't understand what the indexOf.call does though
-                        if (error) {
-                            console.log("error ", error);
-                            process.exit();
-                        } else if (indexOf.call(groups, "error") >= 0) {
-                            console.log("posts error ", groups.error);
-                            process.exit();
-                        }
-                        // number of posts fetched
-                        var numPostsFetched = posts.data.length;
-                        // now we have a list of groups
-                        // find save mah inbox group
-                        // save it's id so we can create an actual req to SMI posts
-                        console.log("\n5. looping through posts data \n");
-                        if (numPostsFetched > 0) {
-                            // save items into db
-                            for (var i = 0; i < posts.data.length; i++) {
-                                self.exportDatabase.push(posts.data[i]);
-                                console.log('\n newly inserted post ', posts.data[i].id)
-                                    // appDB.insert( posts.data[ i ], function( err, newPost ) {
-                                    //     console.log( '\n newly inserted post ', newPost.id )
-                                    // });    
-                            }
-                            var newUntil = moment(_.first(sortedUpdated(posts))).unix() - 1,
-                                newUntilDate = moment(_.first(sortedUpdated(posts))).format("dddd, MMMM Do YYYY, h:mm:ss a"),
-                                newURL = self.timeParamUrl(undefined, newUntil);
-                            // console.log( ' \n ====== current posts fetch length [ ', numPostsFetched, ' ] ====== ' ); 
-                            console.log(" \n getting posts from: [", 0, "]   --> until : [", newUntilDate, "] ");
-                            // console.log( ' \n hopefully a newer url with date [ ', newURL, ' ]' ); 
-                            currentPostIndex++;
-                            self.getPostsForGroup(newURL);
-                        } else {
-                            console.log("\nfinished grabbing all posts");
-                            console.log("\n....about to export to a file");
-                            fs.writeFile('db/test.js', JSON.stringify(self.exportDatabase), function (err) {
-                                if (err) {
-                                    console.error('YOU FUCKED UP');
-                                } else {
-                                    console.log("Output saved to /test.js");
-                                    process.exit()
-                                }
-                            });
-                        };
-                    */
+        // Return the npm request result
+        return request(url, function (error, response, body) {
+            // grab the body response
+            p = JSON.parse(body);
+            posts = p.data;
+
+            // catch and scream about errors...
+            // don't understand what the indexOf.call does though
+            if (error) {
+                console.log("error ", error);
+                process.exit();
+            } else if (indexOf.call(posts, "error") >= 0) {
+                console.log("posts error ", posts.error);
+                process.exit();
+            }
+
+            // number of posts fetched
+            var numberOfPostsFetched = posts.length;
+
+            // if we successfully retrieved posts
+            if (numberOfPostsFetched > 0) {
+
+                // tally how many posts we have 
+                self.defaults.numberOfRetrievedPosts += numberOfPostsFetched;
+
+                // add the posts into an array for storage. 
+                self.defaults.retrievedPostsArray = self.defaults.retrievedPostsArray.concat(posts);
+
+                // get the oldest post
+                var oldestPost = _.last(posts).created_time,
+                    // create a new until variable for generating the URL
+                    updatedUntilVar = moment(oldestPost).unix() - 1,
+                    // show us what that date is just for debugging purposes
+                    updatedUntilDate = moment(oldestPost).format("dddd, MMMM Do YYYY, h:mm:ss a"),
+                    // generate an updated url with a new until variable
+                    updatedURL = self.generateDynamicURL(undefined, updatedUntilVar);
+                console.log(" \n just fetched ", numberOfPostsFetched, " posts \n getting posts starting from: [ ", updatedUntilDate, " ] ");
+
+                // recursively call this function until we have all the posts
+                self.getAllPosts(updatedURL);
+            }
+            // we've finished retrieving all the posts 
+            else {
+                console.log("\n\n\n ********* SUCCESS ********* \n --- finished grabbing ", self.defaults.numberOfRetrievedPosts, "posts ---");
+                console.log("newest post: ", moment(_.first(self.defaults.retrievedPostsArray).created_time).format("MMMM Do YYYY"));
+                console.log("oldest post: ", moment(_.last(self.defaults.retrievedPostsArray).created_time).format("MMMM Do YYYY"));
+                console.log("---------------------------------------------------");
+
+                fs.writeFile('data/saveMyInbox.json', JSON.stringify(self.defaults.retrievedPostsArray), function (err) {
+                    console.warn("\n ...exporting posts to a json file")
+                    if (err) {
+                        console.error('there was an error outputting the file');
+                    } else {
+                        console.log("Output saved to data/saveMyInbox.json");
+                        process.exit(1); 
+                    }
+                });
+            };
+
+
+        })
     },
 
     getRecentPosts: function (untilTime) {
         console.log("getting recent posts")
+    },
+
+    // function that creates a url that appends a new until time so that we can keep looping through 
+    // facebook posts as far back as the group was created. 
+    generateDynamicURL: function (since, untilTime) {
+        var url = "https://graph.facebook.com/" + this.defaults.groupID + "/feed?limit=100&access_token=" + this.defaults.accessToken + "&fields=from,to,message,full_picture,link,name,caption,description,created_time,updated_time,likes,comments.limit(999)",
+            untilDate = moment(untilTime).format("dddd, MMMM Do YYYY, h:mm:ss a");
+        // if there's no until time, then it should be the number of seconds since the Unix Epoch
+        if (untilTime === undefined) {
+            untilTime = "&until=" + (moment().unix());
+            url += untilTime;
+        } else { // otherwise just keep it as is. 
+            url += "&until=" + untilTime;
+        }
+        // if since is undefined, 
+        // then just leave it as undefined
+        // TODO 
+        // ---------
+        // a little unsure about this, but figure out this logic!
+        if (since !== undefined) {
+            url += "&since=" + since;
+        } else {
+            if (this.defaults.downloadedSince !== null) {
+                since = "&since=" + this.defaults.downloadedSince;
+                url += since;
+            } else {
+                since = "&since=0";
+                url += since;
+            }
+        }
+        return url;
     }
 }
 

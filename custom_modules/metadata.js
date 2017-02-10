@@ -10,8 +10,35 @@ var scrape = require('html-metadata'),
 
 function MetaDataRetrieval() {
 
+    // TODO 
+    // -- figure out what to do with comments and associated information with a post
     this.defaults = {
-        postsWithURLsPath: 'data/saveMyInboxURLs.json'
+        postsWithURLsPath: 'data/postsWithURLs.json',
+        newPost: {
+            title: "",
+            site_name: "",
+            type: "",
+            message: "",
+            link: "",
+            description: "",
+            image: {
+                url: "",
+                width: 0,
+                height: 0,
+            },
+            duration: "",
+            album: "",
+            musician: "",
+            audio: {
+                url: "",
+                type: ""
+            },
+            created_time: "",
+            from: {
+                name: ""
+            },
+            like_count: 0
+        }
     }
 }
 

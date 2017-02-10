@@ -36,48 +36,47 @@ FacebookPostsURLStripper.prototype = {
 
     // start to parse and find all the urls in an object and save it in a new object
     stripOutURLs: function (posts) {
-
-        // testing purposes
-        // grab  apost
-        var post = posts[0];
-        // create a post url attr
-        post.urls = [];
-
-        // loop through each attr in the post
-        for (var attr in post) {
-            // if the attribute is a string
-            if (typeof post[attr] === "string") {
-                // then see if there's a url, and extract it
-                var extractedURL = extractURL(post[attr]),
-                    obj = {};
-                // loop through each "Set" object that contains a url
-                extractedURL.forEach(function (url) {
-                    // store the post attr and url in a new object
-                    obj[attr] = url;
-                    // push that object into an array in the post 
-                    post.urls.push(obj);
-                });
-            }
-        }
-        console.log(post);
-
+        // TODO 
+        // --- use posts.each() method;
         // loop through all the posts
-        for (var p in posts) {
+        for (var index in posts) {
             // store each post
-            var post = posts[p];
+            // index is a string not a num apparently 
+            var post = posts[parseInt(index)];
 
             // loop through each attr in the post
             for (var attr in post) {
-                // copy and paste the above code. 
+                // if the attribute is a string
+                if (typeof post[attr] === "string") {
+                    // then see if there's a url, and extract it
+                    var extractedURL = extractURL(post[attr]),
+                        obj = {};
+
+                    // loop through each "Set" object that contains a url
+                    extractedURL.forEach(function (url) {
+                        // store the post attr and url in a new object
+                        obj[attr] = url;
+
+                        // if we have this variable just push the object
+                        if (post.urls) {
+                            // push that object into an array in the post 
+                            post.urls.push(obj);
+                        } else { // else create a new attr in the post object
+                            post.urls = [];
+                            post.urls.push(obj);
+                        }
+                    });
+                }
             }
         }
+        console.log("finished stripping urls")
 
         // this method
         // this.savePosts( posts, 'postsWithURLs' ); 
         // this.retrieveMetaData( this.defaults.postsWithURLs);
-        
+
         // OR
-        // this.savePostsToFile( "saveMyInboxURLs.json" );
+        this.savePostsToFile(posts, "saveMyInboxURLs.json");
         // then call metadata npm in the init.js file
     },
 
@@ -85,6 +84,18 @@ FacebookPostsURLStripper.prototype = {
 
     },
 
+    savePostsToFile: function (posts, path) {
+        console.log("Saving the posts with urls to a file ");
+        fs.writeFile('data/postsWithURLs.json', JSON.stringify(posts), function (err) {
+            console.warn("\n ...exporting posts with urls to a json file")
+            if (err) {
+                console.error('there was an error outputting the file');
+            } else {
+                console.log("Output saved to data/postsWithURLs.json");
+                process.exit(1);
+            }
+        });
+    },
     restructurePost: function (data) {
         var post = {
 

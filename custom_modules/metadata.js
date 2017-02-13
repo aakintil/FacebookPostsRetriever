@@ -59,8 +59,74 @@ MetaDataRetrieval.prototype = {
         })
     },
 
-    scrapePosts: function () {
+    scrapePosts: function (posts) {
         console.log("scraping posts for metadata");
+        var post = posts[0];
+
+        for (var attr in post) {
+            if (attr === "urls") {
+                var urlsArray = post[attr];
+                for (var index in urlsArray) {
+                    var url = urlsArray[index];
+                    if (url['message']) {
+                        scrape(url['message']).then(function (metadata) {
+                            // console.log("meta data for a messsage link\n", metadata);
+                            // then we create data object that will store all the necessary information in order to create the ultimat post 
+                            // --- 
+                            // if this openGraph.type === 'video', 'song', or 'blog'
+                            /*
+{
+    general: {
+        canonical: 'https://www.youtube.com/watch?v=TwyPsUd9LAk',
+        description: 'New single "I\'m Better" ft. Lamb available for streaming and download now: https://missyell.io/tt/imbetter Director: Dave Meyers & Missy Elliott Executive Pr...',
+        shortlink: 'https://youtu.be/TwyPsUd9LAk',
+        title: 'Missy Elliott - I\'m Better ft. Lamb [Official Video] - YouTube',
+        lang: 'en'
+    },
+    jsonLd: {
+        '@context': 'http://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [[Object]]
+    },
+    openGraph: {
+        site_name: 'YouTube',
+        url: 'https://www.youtube.com/watch?v=TwyPsUd9LAk',
+        title: 'Missy Elliott - I\'m Better ft. Lamb [Official Video]',
+        image: {
+            url: 'https://i.ytimg.com/vi/TwyPsUd9LAk/hqdefault.jpg'
+        },
+        description: 'New single "I\'m Better" ft. Lamb available for streaming and download now: https://missyell.io/tt/imbetter Director: Dave Meyers & Missy Elliott Executive Pr...',
+        type: 'video',
+        app_id: '87741124305'
+    },
+    schemaOrg: {
+        items: [[Object]]
+    },
+    twitter: {
+        card: 'player',
+        site: '@youtube',
+        url: 'https://www.youtube.com/watch?v=TwyPsUd9LAk',
+        title: 'Missy Elliott - I\'m Better ft. Lamb [Official Video]',
+        description: 'New single "I\'m Better" ft. Lamb available for streaming and download now: https://missyell.io/tt/imbetter Director: Dave Meyers & Missy Elliott Executive Pr...',
+        image: 'https://i.ytimg.com/vi/TwyPsUd9LAk/hqdefault.jpg',
+        app: {
+            name: [Object],
+            id: [Object],
+            url: [Object]
+        },
+        player: {
+            url: 'https://www.youtube.com/embed/TwyPsUd9LAk',
+            width: '1280',
+            height: '720'
+        }
+    }
+}
+                             */
+                        });
+                    }
+                }
+            }
+        }
     }
 }
 

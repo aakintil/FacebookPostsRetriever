@@ -15,29 +15,16 @@ function MetaDataRetrieval() {
     this.defaults = {
         postsWithURLsPath: 'data/postsWithURLs.json',
         newPost: {
-            title: "",
-            site_name: "",
-            type: "",
             message: "",
             link: "",
-            description: "",
-            image: {
-                url: "",
-                width: 0,
-                height: 0,
-            },
-            duration: "",
-            album: "",
-            musician: "",
-            audio: {
-                url: "",
-                type: ""
-            },
             created_time: "",
             from: {
                 name: ""
             },
-            like_count: 0
+            like_count: 0,
+            openGraph: {
+
+            }
         }
     }
 }
@@ -61,20 +48,66 @@ MetaDataRetrieval.prototype = {
 
     scrapePosts: function (posts) {
         console.log("scraping posts for metadata");
-        var post = posts[0];
+        var post = posts[1000],
+            scrapedPosts = [],
+            self = this,
+            doNothing = function () {}; // does nothing
 
+        console.log(post)
         for (var attr in post) {
+
+            // create a new post consolidated object
+            var newPost = {
+                message: post['message'] || 'NO LINK',
+                link: post['link'] || 'NO LINK',
+                created_time: post['created_time'],
+                from: post['from'],
+                image: post['full_picture'],
+                like_count: post['like_count'] || 0,
+                description: post['description'] || 'NO DESCRIPTION',
+                openGraph: {}
+            };
+
+            // if it has an array of urls
             if (attr === "urls") {
+
+                // store the url array
                 var urlsArray = post[attr];
+
+                // loop through
                 for (var index in urlsArray) {
-                    var url = urlsArray[index];
-                    if (url['message']) {
-                        scrape(url['message']).then(function (metadata) {
-                            // console.log("meta data for a messsage link\n", metadata);
-                            // then we create data object that will store all the necessary information in order to create the ultimat post 
-                            // --- 
-                            // if this openGraph.type === 'video', 'song', or 'blog'
-                            /*
+                    var url = urlsArray[index],
+                        type = '';
+
+                    (url['message'] ? type = 'message' : url['link'] ? type = 'link' : type = 'NO TYPE');
+
+                    // if the url is a message or link
+                    // if (url['message'] || url['link']) {
+
+                    // TODO !!!! ----- **** 
+                    // what happens if there's no link or message? 
+                    (type === 'NO TYPE' ? doNothing() : doNothing());
+
+                    // scrape it and save the open graph data
+                    scrape(url[type]).then(function (metadata) {
+                        // console.log("meta data for a messsage link\n", metadata.schemaOrg.items[0].properties);
+                        // save the open graph data
+                        newPost.openGraph = metadata.openGraph;
+                        // then we create data object that will store all the necessary information in order to create the ultimate post 
+
+                        // console.log("should work \n", newPost)
+
+                        // --- 
+                        // if this openGraph.type === 'video', 'song', or 'blog'
+                    });
+                    //                    }
+                }
+            }
+        }
+    }
+}
+
+/*
 {
     general: {
         canonical: 'https://www.youtube.com/watch?v=TwyPsUd9LAk',
@@ -122,13 +155,5 @@ MetaDataRetrieval.prototype = {
     }
 }
                              */
-                        });
-                    }
-                }
-            }
-        }
-    }
-}
-
 // Module
 module.exports = MetaDataRetrieval; // creating the facebook request module

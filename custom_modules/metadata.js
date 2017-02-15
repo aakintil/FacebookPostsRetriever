@@ -1,8 +1,14 @@
+var cheerio = require('cheerio');
+var preq = require('preq'); // Promisified request library
+var parseDublinCore = require('html-metadata').parseDublinCore;
 var scrape = require('html-metadata'),
     fs = require('file-system'), // to write to a file 
     request = require('request'), // to make actual requests to the facebook api
     pathExists = require('path-exists'), // to check whether a file exists or not, 
-    childProcess = require('child_process');
+    childProcess = require('child_process'),
+    _ = require('underscore'),
+    moment = require('moment'); // to reformat date/time so we can understand
+
 //    , url = "http://www.billboard.com/articles/columns/hip-hop/7480161/frank-ocean-visually-stunning-nikes-video-endless-boys-dont-cry-asap-rocky-apple-music";
 //scrape(url).then(function (metadata) {
 //    console.log("wtf", metadata);
@@ -48,62 +54,92 @@ MetaDataRetrieval.prototype = {
 
     scrapePosts: function (posts) {
         console.log("scraping posts for metadata");
-        var post = posts[1000],
-            scrapedPosts = [],
+        //        console.log(posts[22]);
+        var scrapedPosts = [],
             self = this,
-            doNothing = function () {}; // does nothing
+            doNothing = function () {}, // does nothing
+            // scrape it and save the open graph data
+            initScraping = function (url, newPost) {
 
-        console.log(post)
-        for (var attr in post) {
 
-            // create a new post consolidated object
-            var newPost = {
-                message: post['message'] || 'NO LINK',
-                link: post['link'] || 'NO LINK',
-                created_time: post['created_time'],
-                from: post['from'],
-                image: post['full_picture'],
-                like_count: post['like_count'] || 0,
-                description: post['description'] || 'NO DESCRIPTION',
-                openGraph: {}
-            };
-
-            // if it has an array of urls
-            if (attr === "urls") {
-
-                // store the url array
-                var urlsArray = post[attr];
-
-                // loop through
-                for (var index in urlsArray) {
-                    var url = urlsArray[index],
-                        type = '';
-
-                    (url['message'] ? type = 'message' : url['link'] ? type = 'link' : type = 'NO TYPE');
-
-                    // if the url is a message or link
-                    // if (url['message'] || url['link']) {
-
-                    // TODO !!!! ----- **** 
-                    // what happens if there's no link or message? 
-                    (type === 'NO TYPE' ? doNothing() : doNothing());
-
-                    // scrape it and save the open graph data
-                    scrape(url[type]).then(function (metadata) {
-                        // console.log("meta data for a messsage link\n", metadata.schemaOrg.items[0].properties);
-                        // save the open graph data
+                scrape(url, function (error, metadata) {
+                    if (error) {
+                        doNothing();
+                    } else {
                         newPost.openGraph = metadata.openGraph;
                         // then we create data object that will store all the necessary information in order to create the ultimate post 
+                        // console.log("----------------------- \n", newPost, "----------------------- \n\n");
+                        scrapedPosts.push(newPost);
+                        console.log(scrapedPosts.length)
+                    }
+                });
+                //                scrape(url).then(function (metadata) {
+                //                    // save the open graph data
+                //                    console.log(url)
+                //                        // if no issues
+                //                    if (metadata) {
+                //                        newPost.openGraph = metadata.openGraph;
+                //                        // then we create data object that will store all the necessary information in order to create the ultimate post 
+                //                        //                    console.log("----------------------- \n", newPost, "----------------------- \n\n");
+                //                        //                        scrapedPosts.push(newPost);
+                //                        //                        console.log(scrapedPosts.length)
+                //                    }
+                //                    // --- 
+                //                    // if this openGraph.type === 'video', 'song', or 'blog'
+                //                })
+            };
 
-                        // console.log("should work \n", newPost)
+        //        console.log( post )
+        // ERRORS
+        // -- 30 - 35
+        // non occur from 
+        // -- 0 - 25 
+        // -- 25 - 30
+        for (var i = 0; i < posts.length; i++) {
+            var post = posts[i];
+            for (var attr in post) {
+                // create a new post consolidated object
+                var newPost = {
+                    message: post['message'] || 'NO MESSAGE',
+                    link: (post['link'] === undefined ? 'NO LINK' : post['link']),
+                    created_time: moment(post['created_time']).format("MMMM Do, YYYY"),
+                    from: post['from']['name'],
+                    image: (post['full_picture'] === undefined ? 'NO IMAGE' : post['full_picture']),
+                    likes: (post['likes'] ? post['likes']['data'].length : 0),
+                    description: (post['description'] === undefined ? 'NO DESCRIPTION' : post['description']),
+                    openGraph: {}
+                };
 
-                        // --- 
-                        // if this openGraph.type === 'video', 'song', or 'blog'
-                    });
-                    //                    }
+
+                // if it has an array of urls, we want to scrape all that information
+                if (attr === "urls") {
+                    // store the url array
+                    var urlsArray = post[attr];
+
+                    // loop through
+                    for (var index in urlsArray) {
+                        var url = urlsArray[index],
+                            type = '';
+
+                        if (url['message']) {
+                            initScraping(url['message'], newPost)
+                        } else if (url['link']) {
+                            initScraping(url['link'], newPost)
+                        } else {
+                            break;
+                        }
+                        // TODO !!!! ----- **** 
+                        // what happens if there's no link or message? 
+                    }
                 }
             }
         }
+
+        console.log("done scraping and creating new objects \n");
+//                setTimeout(function () {
+//                    console.log(scrapedPosts);
+//                }, 10000)
+
     }
 }
 

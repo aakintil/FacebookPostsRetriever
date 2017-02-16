@@ -6,7 +6,9 @@ var scrape = require('html-metadata'),
     request = require('request'), // to make actual requests to the facebook api
     pathExists = require('path-exists'), // to check whether a file exists or not, 
     childProcess = require('child_process'),
+    events = require('events'),
     _ = require('underscore'),
+    eventEmitter = new events.EventEmitter(),
     moment = require('moment'); // to reformat date/time so we can understand
 
 //    , url = "http://www.billboard.com/articles/columns/hip-hop/7480161/frank-ocean-visually-stunning-nikes-video-endless-boys-dont-cry-asap-rocky-apple-music";
@@ -20,6 +22,7 @@ function MetaDataRetrieval() {
     // -- figure out what to do with comments and associated information with a post
     this.defaults = {
         postsWithURLsPath: 'data/postsWithURLs.json',
+        scrapedPosts: [],
         newPost: {
             message: "",
             link: "",
@@ -56,47 +59,47 @@ MetaDataRetrieval.prototype = {
         console.log("scraping posts for metadata");
         //        console.log(posts[22]);
         var scrapedPosts = [],
+            sPArray = this.defaults.scrapedPosts,
             self = this,
             doNothing = function () {}, // does nothing
             // scrape it and save the open graph data
             initScraping = function (url, newPost) {
-
-
                 scrape(url, function (error, metadata) {
                     if (error) {
-                        doNothing();
-                    } else {
-                        newPost.openGraph = metadata.openGraph;
+                        return;
+                    } else if (metadata) {
+
+                        if (newPost) {
+                            newPost.openGraph = metadata.openGraph;
+                            return newPost;
+                        } else {
+                            return;
+                        }
                         // then we create data object that will store all the necessary information in order to create the ultimate post 
                         // console.log("----------------------- \n", newPost, "----------------------- \n\n");
-                        scrapedPosts.push(newPost);
-                        console.log(scrapedPosts.length)
+                        //                        console.log(scrapedPosts.length)
                     }
                 });
-                //                scrape(url).then(function (metadata) {
-                //                    // save the open graph data
-                //                    console.log(url)
-                //                        // if no issues
-                //                    if (metadata) {
-                //                        newPost.openGraph = metadata.openGraph;
-                //                        // then we create data object that will store all the necessary information in order to create the ultimate post 
-                //                        //                    console.log("----------------------- \n", newPost, "----------------------- \n\n");
-                //                        //                        scrapedPosts.push(newPost);
-                //                        //                        console.log(scrapedPosts.length)
-                //                    }
-                //                    // --- 
-                //                    // if this openGraph.type === 'video', 'song', or 'blog'
-                //                })
             };
 
-        //        console.log( post )
         // ERRORS
         // -- 30 - 35
         // non occur from 
         // -- 0 - 25 
         // -- 25 - 30
+        eventEmitter.on('finished', function () {
+            console.log("finished scraping urls from posts")
+            console.log(sPArray);
+            //            var x = _.uniq(_.collect(sPArray, function (x) {
+            //                //                console.log(x)
+            //                return JSON.stringify(x);
+            //            }));
+            //            console.log(x)
+        });
+
         for (var i = 0; i < posts.length; i++) {
             var post = posts[i];
+            var testPost = {};
             for (var attr in post) {
                 // create a new post consolidated object
                 var newPost = {
@@ -117,32 +120,48 @@ MetaDataRetrieval.prototype = {
                     var urlsArray = post[attr];
 
                     // loop through
+                    // -- TODO -- 
+                    // have to think about this logic again!
                     for (var index in urlsArray) {
                         var url = urlsArray[index],
                             type = '';
 
                         if (url['message']) {
-                            initScraping(url['message'], newPost)
+                            newPost = initScraping(url['message'], newPost);
+                            // sPArray.push(initScraping(url['message'], newPost));
                         } else if (url['link']) {
-                            initScraping(url['link'], newPost)
-                        } else {
-                            break;
+                            newPost = initScraping(url['link'], newPost);
+                            // sPArray.push(initScraping(url['link'], newPost));
                         }
                         // TODO !!!! ----- **** 
                         // what happens if there's no link or message? 
                     }
+                    // sPArray.push(newPost)
                 }
+                testPost = newPost;
+            }
+
+            sPArray.push(testPost);
+
+
+            if (i === posts.length - 1) {
+                //                console.log(scrapedPosts);
+                eventEmitter.emit('finished');
             }
         }
 
         console.log("done scraping and creating new objects \n");
-//                setTimeout(function () {
-//                    console.log(scrapedPosts);
-//                }, 10000)
+        //                setTimeout(function () {
+        //                    console.log(scrapedPosts);
+        //                }, 10000)
 
     }
 }
 
+// Module
+module.exports = MetaDataRetrieval; // creating the facebook request module
+
+// example of scraped data structure 
 /*
 {
     general: {
@@ -191,5 +210,3 @@ MetaDataRetrieval.prototype = {
     }
 }
                              */
-// Module
-module.exports = MetaDataRetrieval; // creating the facebook request module

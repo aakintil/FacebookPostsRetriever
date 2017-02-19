@@ -63,23 +63,27 @@ MetaDataRetrieval.prototype = {
             self = this,
             doNothing = function () {}, // does nothing
             // scrape it and save the open graph data
-            initScraping = function (url, newPost) {
-                scrape(url, function (error, metadata) {
-                    if (error) {
-                        return;
-                    } else if (metadata) {
+            initScraping = function (url) {
+                // if the url exists and is valid
+                if (url !== undefined && url.length > 0) {
+                    scrape(url, function (error, metadata) {
+                        if (error) {
+                            console.log("\n\n======================")
+                            console.log("error \n ", error)
+                            console.log("======================\n\n")
 
-                        if (newPost) {
-                            newPost.openGraph = metadata.openGraph;
-                            return newPost;
-                        } else {
-                            return;
+                            return false;
+                        } else if (metadata) {
+                            // this is all we want...
+                            return metadata.openGraph;
                         }
-                        // then we create data object that will store all the necessary information in order to create the ultimate post 
-                        // console.log("----------------------- \n", newPost, "----------------------- \n\n");
-                        //                        console.log(scrapedPosts.length)
-                    }
-                });
+                    });
+
+                }
+                // otherwise just return something unimportant
+                else {
+                    return false;
+                }
             };
 
         // ERRORS
@@ -87,19 +91,32 @@ MetaDataRetrieval.prototype = {
         // non occur from 
         // -- 0 - 25 
         // -- 25 - 30
+        var isNotEmpty = function (obj) {
+            for (var i in obj) {
+                console.log(i)
+                if (i)
+                    return true;
+            }
+            return false;
+        }
         eventEmitter.on('finished', function () {
             console.log("finished scraping urls from posts")
-                //            console.log(sPArray);
+            console.log("TOTAL POSTS ", posts.length)
                 //            var x = _.uniq(_.collect(sPArray, function (x) {
                 //                //                console.log(x)
                 //                return JSON.stringify(x);
                 //            }));
                 //            console.log(x)
         });
-
+        // go through each post's url object. 
+        // if it's a message or a link attribute, then scrape it
+        // else, don't do anything
+        var messages = [],
+            links = [],
+            invalid = [],
+            testPost = {};
         for (var i = 0; i < posts.length; i++) {
             var post = posts[i];
-            var testPost = {};
             for (var attr in post) {
                 // create a new post consolidated object
                 var newPost = {
@@ -118,37 +135,38 @@ MetaDataRetrieval.prototype = {
                 if (attr === "urls") {
                     // store the url array
                     var urlsArray = post[attr];
-
                     // loop through
                     // -- TODO -- 
                     // have to think about this logic again!
                     for (var index in urlsArray) {
-                        var url = urlsArray[index],
-                            type = '';
+                        var url = urlsArray[index];
 
-                        if (url['message']) {
-                            //                            newPost = initScraping(url['message'], newPost);
-                            console.log("is a message")
-                                // sPArray.push(initScraping(url['message'], newPost));
-                        } else if (url['link']) {
-                            console.log("is a link")
-                                //                            newPost = initScraping(url['link'], newPost);
-                                // sPArray.push(initScraping(url['link'], newPost));
+                        // if we have a url in the link, scrape it
+                        if (url['link']) {
+                            // if it returns false, then there was some kind of error and we don't want to messup the original object
+                            // otherwise, the openGraph attribute is now the metadata information 
+                            // and we have far more context
+                            (initScraping(url['link']) === false ? doNothing() : newPost.openGraph = initScraping(url['link']))
                         }
-                        // TODO !!!! ----- **** 
-                        // what happens if there's no link or message? 
+                        // if we have a url in the message field, scrape it
+                        else if (url['message']) {
+                            (initScraping(url['message']) === false ? doNothing() : newPost.openGraph = initScraping(url['message']))
+                        }
+                        // if the previous failed and we have a url in the description field, scrape it
+                        else if (url['description']) {
+                            (initScraping(url['description']) === false ? doNothing() : newPost.openGraph = initScraping(url['description']))
+                        }
+                        // otherwise, we don't have any urls, and we can just add the object into the scrape array 
+                        // insert the newpost with hopefully some open graph data into the scraped array
+                        sPArray.push(newPost);
                     }
-                    // sPArray.push(newPost)
                 }
-                testPost = newPost;
             }
-
-            sPArray.push(testPost);
 
 
             if (i === posts.length - 1) {
-                //                console.log(scrapedPosts);
-                eventEmitter.emit('finished');
+                console.log(scrapedPosts);
+                // eventEmitter.emit('finished');
             }
         }
 

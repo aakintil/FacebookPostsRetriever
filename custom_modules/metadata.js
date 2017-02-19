@@ -89,12 +89,12 @@ MetaDataRetrieval.prototype = {
         // -- 25 - 30
         eventEmitter.on('finished', function () {
             console.log("finished scraping urls from posts")
-            console.log(sPArray);
-            //            var x = _.uniq(_.collect(sPArray, function (x) {
-            //                //                console.log(x)
-            //                return JSON.stringify(x);
-            //            }));
-            //            console.log(x)
+                //            console.log(sPArray);
+                //            var x = _.uniq(_.collect(sPArray, function (x) {
+                //                //                console.log(x)
+                //                return JSON.stringify(x);
+                //            }));
+                //            console.log(x)
         });
 
         for (var i = 0; i < posts.length; i++) {
@@ -127,11 +127,13 @@ MetaDataRetrieval.prototype = {
                             type = '';
 
                         if (url['message']) {
-                            newPost = initScraping(url['message'], newPost);
-                            // sPArray.push(initScraping(url['message'], newPost));
+                            //                            newPost = initScraping(url['message'], newPost);
+                            console.log("is a message")
+                                // sPArray.push(initScraping(url['message'], newPost));
                         } else if (url['link']) {
-                            newPost = initScraping(url['link'], newPost);
-                            // sPArray.push(initScraping(url['link'], newPost));
+                            console.log("is a link")
+                                //                            newPost = initScraping(url['link'], newPost);
+                                // sPArray.push(initScraping(url['link'], newPost));
                         }
                         // TODO !!!! ----- **** 
                         // what happens if there's no link or message? 

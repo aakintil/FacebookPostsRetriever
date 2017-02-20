@@ -7,6 +7,7 @@ var scrape = require('html-metadata'),
     pathExists = require('path-exists'), // to check whether a file exists or not, 
     childProcess = require('child_process'),
     events = require('events'),
+    //    events.EventEmitter.prototype._maxListeners = 100,
     _ = require('underscore'),
     eventEmitter = new events.EventEmitter(),
     moment = require('moment'); // to reformat date/time so we can understand
@@ -38,6 +39,19 @@ function MetaDataRetrieval() {
     }
 }
 
+/*
+if (url !== undefined && url.length > 0) {
+    scrape(url, function (error, metadata) {
+        if (metadata && metadata.openGraph !== undefined) {
+            console.log(metadata.openGraph)
+                // this is all we want...
+            return metadata.openGraph;
+        } else
+            return;
+    });
+
+}
+*/
 MetaDataRetrieval.prototype = {
     retrieveData: function () {
         var file = this.defaults.postsWithURLsPath,
@@ -63,23 +77,43 @@ MetaDataRetrieval.prototype = {
             self = this,
             doNothing = function () {}, // does nothing
             // scrape it and save the open graph data
-            initScraping = function (url) {
-                // if the url exists and is valid
-                if (url !== undefined && url.length > 0) {
+            initScraping = function (url, newPost) {
+
+                if (typeof url !== undefined) {
+                    var options = {
+                        url: url,
+                        jar: request.jar(), // Cookie jar
+                        headers: {
+                            'User-Agent': 'webscraper'
+                        }
+                    };
+                    var endIt = function () {
+                        return
+                    }
                     scrape(url, function (error, metadata) {
-                        if (metadata && metadata.openGraph !== undefined) {
-                            console.log(metadata.openGraph)
-                                // this is all we want...
-                            return metadata.openGraph;
-                        } else
-                            return;
-                    });
+                        var result = "";
+                        // make sure we're returning actual data
+                        if (metadata !== undefined) {
+                            //                            console.log("\n==========================");
+                            //                            console.log(metadata === undefined);
+                            //                            console.log("==========================\n");
+                            eventEmitter.emit('scapedData', metadata, newPost);
+                        } else {
+                            //                            console.log("\n*****************");
+                            //                            console.log("undefined ");
+                            //                            console.log("*****************\n");
+                            return false;
+                        }
+
+                        //                        return result;
+                    })
 
                 }
+                //                console.log( "res ", result )
+                //                return result;
+                // if the url exists and is valid
                 // otherwise just return something unimportant
-                else {
-                    return false;
-                }
+
             };
 
         // ERRORS
@@ -137,38 +171,25 @@ MetaDataRetrieval.prototype = {
                     for (var index in urlsArray) {
                         var url = urlsArray[index];
 
-                        // if we have a url in the link, scrape it
                         if (url['link']) {
-                            // if it returns false, then there was some kind of error and we don't want to messup the original object
-                            // otherwise, the openGraph attribute is now the metadata information 
-                            // and we have far more context
-                            (initScraping(url['link']) === false ? doNothing() : newPost.openGraph = initScraping(url['link']))
-
-                            //                            console.log("\n\n======================")
-                            //                            console.log(newPost)
-                            //                            console.log("======================\n\n")
+                            var obj = {}
+                            initScraping(url['link'], newPost);
                         }
-                        // if we have a url in the message field, scrape it
-                        else if (url['message']) {
-                            (initScraping(url['message']) === false ? doNothing() : newPost.openGraph = initScraping(url['message']))
-                        }
-                        // if the previous failed and we have a url in the description field, scrape it
-                        else if (url['description']) {
-                            (initScraping(url['description']) === false ? doNothing() : newPost.openGraph = initScraping(url['description']))
-                        }
-                        // otherwise, we don't have any urls, and we can just add the object into the scrape array 
                         // insert the newpost with hopefully some open graph data into the scraped array
-                        sPArray.push(newPost);
                     }
                 }
             }
 
 
             if (i === posts.length - 1) {
-                //                console.log(scrapedPosts, );
                 eventEmitter.emit('finished', sPArray);
             }
         }
+
+        eventEmitter.on('scapedData', function (metadata, newPost) {
+            newPost.openGraph = metadata.openGraph;
+            sPArray.push(newPost);
+        });
     }
 }
 

@@ -67,16 +67,12 @@ MetaDataRetrieval.prototype = {
                 // if the url exists and is valid
                 if (url !== undefined && url.length > 0) {
                     scrape(url, function (error, metadata) {
-                        if (error) {
-                            console.log("\n\n======================")
-                            console.log("error \n ", error)
-                            console.log("======================\n\n")
-
-                            return false;
-                        } else if (metadata) {
-                            // this is all we want...
+                        if (metadata && metadata.openGraph !== undefined) {
+                            console.log(metadata.openGraph)
+                                // this is all we want...
                             return metadata.openGraph;
-                        }
+                        } else
+                            return;
                     });
 
                 }
@@ -99,9 +95,9 @@ MetaDataRetrieval.prototype = {
             }
             return false;
         }
-        eventEmitter.on('finished', function () {
+        eventEmitter.on('finished', function (array) {
             console.log("finished scraping urls from posts")
-            console.log("TOTAL POSTS ", posts.length)
+            console.log("openGraph: ", array[5].openGraph)
                 //            var x = _.uniq(_.collect(sPArray, function (x) {
                 //                //                console.log(x)
                 //                return JSON.stringify(x);
@@ -147,6 +143,10 @@ MetaDataRetrieval.prototype = {
                             // otherwise, the openGraph attribute is now the metadata information 
                             // and we have far more context
                             (initScraping(url['link']) === false ? doNothing() : newPost.openGraph = initScraping(url['link']))
+
+                            //                            console.log("\n\n======================")
+                            //                            console.log(newPost)
+                            //                            console.log("======================\n\n")
                         }
                         // if we have a url in the message field, scrape it
                         else if (url['message']) {
@@ -165,16 +165,10 @@ MetaDataRetrieval.prototype = {
 
 
             if (i === posts.length - 1) {
-                console.log(scrapedPosts);
-                // eventEmitter.emit('finished');
+                //                console.log(scrapedPosts, );
+                eventEmitter.emit('finished', sPArray);
             }
         }
-
-        console.log("done scraping and creating new objects \n");
-        //                setTimeout(function () {
-        //                    console.log(scrapedPosts);
-        //                }, 10000)
-
     }
 }
 

@@ -9,9 +9,9 @@ _MD = new metadata();
 // _FR.retrievePostsFromGroup();
 
 // format the results
-// _PF.retrieveData(); 
+_PF.retrieveData(); 
 
 // get more meta data 
- _MD.retrieveData(); 
+// _MD.retrieveData(); 
 
 //console.log(_MD)

@@ -17,11 +17,6 @@ var debug = function (name, input) {
     console.log("================================\n\n");
 }
 
-//    , url = "http://www.billboard.com/articles/columns/hip-hop/7480161/frank-ocean-visually-stunning-nikes-video-endless-boys-dont-cry-asap-rocky-apple-music";
-//scrape(url).then(function (metadata) {
-//    console.log("wtf", metadata);
-//});
-
 function MetaDataRetrieval() {
 
     // TODO 
@@ -75,27 +70,11 @@ MetaDataRetrieval.prototype = {
                 this.index = index;
                 scrape.prototype.index = index;
                 scrape(url, function (error, metadata) {
-
-                    //                    console.log("this is what the index is: ", this.index);
                     console.log("this is what the index is: ", scrape.prototype.index);
                     if (error) {
-                        //                        console.log("==== error ====\n");
-                        //                        console.log(error.name);
-                        //                        console.log("================\n");
                         return;
                     } else if (metadata) {
                         newPost.openGraph = metadata.openGraph;
-                        //                        self.storeData(newPost, index);
-
-                        //                        if (newPost) {
-                        //                            newPost.openGraph = metadata.openGraph;
-                        //                            return newPost;
-                        //                        } else {
-                        //                            return;
-                        //                        }
-                        // then we create data object that will store all the necessary information in order to create the ultimate post 
-                        // console.log("----------------------- \n", newPost, "----------------------- \n\n");
-                        //                        console.log(scrapedPosts.length)
                     }
                 });
             };
@@ -127,158 +106,16 @@ MetaDataRetrieval.prototype = {
                     openGraph: {}
                 };
 
-
-                // if it has an array of urls, we want to scrape all that information
-                if (attr === "urls") {
-                    // store the url array
-                    var urlsArray = post[attr];
-
-                    // loop through
-                    // -- TODO -- 
-                    // have to think about this logic again!
-                    for (var index in urlsArray) {
-                        var url = urlsArray[index],
-                            type = '';
-
-                        if (url['link']) {
-                            // newPost = initScraping(url['message'], newPost);
-                            // initScraping(url['link'], newPost, i);
-                            // debug("newPost", newPost);
-                            scrape(url['link'], function (error, metadata) {
-                                if (error) {
-                                    // self.storeData(newPost, self.defaults.iterator);
-                                    return;
-                                } else if (metadata) {
-                                    newPost.openGraph = metadata.openGraph;
-                                    self.storeData(newPost, self.defaults.iterator);
-                                    self.defaults.iterator++;
-                                    return;
-                                }
-                            });
-                        }
-                        /*
-                        else if (url['message']) {
-                            scrape(url['message'], function (error, metadata) {
-                                if (error) {
-                                    return;
-                                } else if (metadata) {
-                                    newPost.openGraph = metadata.openGraph;
-                                    self.storeData(newPost, self.defaults.iterator);
-                                    return;
-
-                                }
-                            });
-                        } else if (url['description']) {
-                            scrape(url['description'], function (error, metadata) {
-                                if (error) {
-                                    return;
-                                } else if (metadata) {
-                                    newPost.openGraph = metadata.openGraph;
-                                    self.storeData(newPost, self.defaults.iterator);
-                                    return;
-                                }
-                            });
-                        } else {
-                            self.storeData(newPost, self.defaults.iterator);
-                        }
-                        */
-                    }
+                if (i < 10) {
+                    debug(" a new post ", post);
                 }
-            }
-            // sPArray.push(testPost);
-            //            if (i === posts.length - 1) {
-            //                eventEmitter.emit('finished', sPArray);
-            //            }
 
-            //            self.defaults.iterator++;
+            }
+
         }
 
     },
-    storeData: function (data, index) {
-        var isNotEmpty = function (obj) {
-            for (var i in obj) {
-                if (i)
-                    return true;
-            }
-            return false;
-        }
-        console.log(index);
-        this.defaults.scrapedPosts.push(data);
-        if (index < 426) {
-            //            console.log("posts length ", this.defaults.iterator);
-            //            console.log("index ", index);
-        } else {
-            //            debug("finished inserting posts", "------");
-            //            for (var i in this.defaults.scrapedPosts) {
-            //                if (isNotEmpty(this.defaults.scrapedPosts[i].openGraph)) {
-            //                    console.log(this.defaults.scrapedPosts[i])
-            //                }
-            //            }
-            //            console.log(sPArray);
-            var x = _.uniq(_.collect(this.defaults.scrapedPosts, function (x) {
-                return JSON.stringify(x);
-            }));
-            console.log( x.length, " posts are unique"); 
-            debug("finished inserting posts ", x)
-            return;
-        }
-        // TODO 
-        // figure out how to make a callback when the iterator is done
-        //        if (index >= this.defaults.postsLength) {
-        //            debug("we have reached the end", this.defaults.scrapedPosts.length);
-        //        }
-    }
 }
 
 // Module
 module.exports = MetaDataRetrieval; // creating the facebook request module
-
-// example of scraped data structure 
-/*
-{
-    general: {
-        canonical: 'https://www.youtube.com/watch?v=TwyPsUd9LAk',
-        description: 'New single "I\'m Better" ft. Lamb available for streaming and download now: https://missyell.io/tt/imbetter Director: Dave Meyers & Missy Elliott Executive Pr...',
-        shortlink: 'https://youtu.be/TwyPsUd9LAk',
-        title: 'Missy Elliott - I\'m Better ft. Lamb [Official Video] - YouTube',
-        lang: 'en'
-    },
-    jsonLd: {
-        '@context': 'http://schema.org',
-        '@type': 'BreadcrumbList',
-        itemListElement: [[Object]]
-    },
-    openGraph: {
-        site_name: 'YouTube',
-        url: 'https://www.youtube.com/watch?v=TwyPsUd9LAk',
-        title: 'Missy Elliott - I\'m Better ft. Lamb [Official Video]',
-        image: {
-            url: 'https://i.ytimg.com/vi/TwyPsUd9LAk/hqdefault.jpg'
-        },
-        description: 'New single "I\'m Better" ft. Lamb available for streaming and download now: https://missyell.io/tt/imbetter Director: Dave Meyers & Missy Elliott Executive Pr...',
-        type: 'video',
-        app_id: '87741124305'
-    },
-    schemaOrg: {
-        items: [[Object]]
-    },
-    twitter: {
-        card: 'player',
-        site: '@youtube',
-        url: 'https://www.youtube.com/watch?v=TwyPsUd9LAk',
-        title: 'Missy Elliott - I\'m Better ft. Lamb [Official Video]',
-        description: 'New single "I\'m Better" ft. Lamb available for streaming and download now: https://missyell.io/tt/imbetter Director: Dave Meyers & Missy Elliott Executive Pr...',
-        image: 'https://i.ytimg.com/vi/TwyPsUd9LAk/hqdefault.jpg',
-        app: {
-            name: [Object],
-            id: [Object],
-            url: [Object]
-        },
-        player: {
-            url: 'https://www.youtube.com/embed/TwyPsUd9LAk',
-            width: '1280',
-            height: '720'
-        }
-    }
-}
-                             */

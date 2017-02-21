@@ -3,7 +3,8 @@ var scrape = require('html-metadata'),
     request = require('request'), // to make actual requests to the facebook api
     pathExists = require('path-exists'), // to check whether a file exists or not, 
     childProcess = require('child_process'),
-    extractURL = require('get-urls');
+    extractURL = require('get-urls'),
+    _ = require('underscore');
 
 function FacebookPostsURLStripper() {
 
@@ -38,6 +39,8 @@ FacebookPostsURLStripper.prototype = {
     stripOutURLs: function (posts) {
         // TODO 
         // --- use posts.each() method;
+        // TODO 
+        // --- **** CREATE A WAY OF ONLY RETURNING UNIQUE URLS --- **** 
         // loop through all the posts
         for (var index in posts) {
             // store each post
@@ -69,7 +72,8 @@ FacebookPostsURLStripper.prototype = {
                 }
             }
         }
-        console.log("finished stripping urls")
+
+        console.log("finished stripping urls ")
 
         // this method
         // this.savePosts( posts, 'postsWithURLs' ); 

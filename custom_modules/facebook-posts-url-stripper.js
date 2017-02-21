@@ -73,7 +73,7 @@ FacebookPostsURLStripper.prototype = {
             }
         }
 
-        console.log("finished stripping urls ")
+        console.log("finished stripping urls "); 
 
         // this method
         // this.savePosts( posts, 'postsWithURLs' ); 

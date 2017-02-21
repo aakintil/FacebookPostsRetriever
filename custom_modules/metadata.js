@@ -90,9 +90,20 @@ MetaDataRetrieval.prototype = {
         });
         var i = 0;
         this.defaults.postsLength = posts.length;
+        var updatedPosts = [];
+
+        // format the posts and create a new data structure
+        updatedPosts = this.createNewDataStructure(posts);
+
+        // now we have to figure out a way of storing the metadata 
+        this.storeMetadata(updatedPosts);
+    },
+
+    createNewDataStructure: function (posts) {
+        var updatedPosts = [];
         for (i = 0; i < posts.length; i++) {
             var post = posts[i];
-            var testPost = {};
+
             for (var attr in post) {
                 // create a new post consolidated object
                 var newPost = {
@@ -103,19 +114,38 @@ MetaDataRetrieval.prototype = {
                     image: (post['full_picture'] === undefined ? 'NO IMAGE' : post['full_picture']),
                     likes: (post['likes'] ? post['likes']['data'].length : 0),
                     description: (post['description'] === undefined ? 'NO DESCRIPTION' : post['description']),
+                    urls: (post['urls'] === undefined ? 'NO URLS' : post['urls']),
                     openGraph: {}
                 };
-
-                if (i < 10) {
-                    debug(" a new post ", post);
-                }
-
             }
+            
+            var p = newPost['urls'],
+                tempObj = {};
+            for (var j in p) {
+                // i want to store the keys and values separately in an object so i can call on them rather than looping through an array. 
+                // just removes an extra step down the line
+                tempObj[_.keys(Object.assign({}, p[j]))] = _.values(Object.assign({}, p[j]));
+            }
+            newPost['urls'] = tempObj;
 
+
+            // we only want posts that have access to metadata 
+            if (post['urls']) {
+                updatedPosts.push(newPost);
+            }
         }
 
+        return updatedPosts;
     },
+
+    storeMetadata: function (posts) {
+
+        for (var i = 0; i < posts.length; i++) {
+
+        }
+    }
 }
+
 
 // Module
 module.exports = MetaDataRetrieval; // creating the facebook request module

@@ -141,18 +141,43 @@ MetaDataRetrieval.prototype = {
                             type = '';
 
                         if (url['link']) {
-                            //                            newPost = initScraping(url['message'], newPost);
-                            //                            initScraping(url['link'], newPost, i);
+                            // newPost = initScraping(url['message'], newPost);
+                            // initScraping(url['link'], newPost, i);
                             // debug("newPost", newPost);
                             scrape(url['link'], function (error, metadata) {
+                                if (error) {
+                                    // self.storeData(newPost, self.defaults.iterator);
+                                    return;
+                                } else if (metadata) {
+                                    newPost.openGraph = metadata.openGraph;
+                                    self.storeData(newPost, self.defaults.iterator);
+                                    return;
+
+                                }
+                            });
+                        } else if (url['message']) {
+                            scrape(url['message'], function (error, metadata) {
                                 if (error) {
                                     return;
                                 } else if (metadata) {
                                     newPost.openGraph = metadata.openGraph;
                                     self.storeData(newPost, self.defaults.iterator);
-                                    self.defaults.iterator++;
+                                    return;
+
                                 }
                             });
+                        } else if (url['description']) {
+                            scrape(url['description'], function (error, metadata) {
+                                if (error) {
+                                    return;
+                                } else if (metadata) {
+                                    newPost.openGraph = metadata.openGraph;
+                                    self.storeData(newPost, self.defaults.iterator);
+                                    return;
+                                }
+                            });
+                        } else {
+                            self.storeData(newPost, self.defaults.iterator);
                         }
                     }
                 }
@@ -161,18 +186,29 @@ MetaDataRetrieval.prototype = {
             //            if (i === posts.length - 1) {
             //                eventEmitter.emit('finished', sPArray);
             //            }
+            self.defaults.iterator++;
         }
 
     },
     storeData: function (data, index) {
-        this.defaults.scrapedPosts.push(data);
-        console.log("posts length ", this.defaults.iterator);
-        console.log("index ", index);
+        if (index < 1053) {
+            this.defaults.scrapedPosts.push(data);
+            console.log("posts length ", this.defaults.iterator);
+            console.log("index ", index);
+        } else {
+            for (var i in this.defaults.scrapedPosts) {
+                if (this.defaults.scrapedPosts[i]) {
+
+                }
+            }
+            debug("finished inserting posts ", this.defaults.scrapedPosts)
+            return;
+        }
         // TODO 
         // figure out how to make a callback when the iterator is done
-        if (index >= this.defaults.postsLength) {
-            debug("we have reached the end", this.defaults.scrapedPosts.length);
-        }
+        //        if (index >= this.defaults.postsLength) {
+        //            debug("we have reached the end", this.defaults.scrapedPosts.length);
+        //        }
     }
 }
 

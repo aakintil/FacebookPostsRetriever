@@ -23,6 +23,7 @@ function MetaDataRetrieval() {
     // -- figure out what to do with comments and associated information with a post
     this.defaults = {
         postsWithURLsPath: 'data/postsWithURLs.json',
+        posts: [],
         scrapedPosts: [],
         newPost: {
             message: "",
@@ -139,43 +140,55 @@ MetaDataRetrieval.prototype = {
     },
 
     getMetadata: function (posts) {
+        this.posts = posts;
         var self = this,
-            initScraping = function (url, post, index) {
+            initScraping = function (url, post) {
                 scrape(url, function (error, metadata) {
                     if (error) {
                         // console.log(error.name, "\n\n")
                         return;
                     } else if (metadata) {
                         post.openGraph = metadata.openGraph;
+                        self.storeMetadata(post, self.defaults.iterator);
                         self.defaults.iterator++;
-                        self.storeMetadata(post, index);
                     }
                 });
             };
+
 
         for (var i = 0; i < posts.length; i++) {
             var post = posts[i];
 
             // go through and only scrape one url attribute. 
-            if (post['urls']['link'][0]) {
-                initScraping(post['urls']['link'][0], post, self.defaults.iterator);
+            if (post['urls']['link'] !== undefined) {
+                initScraping(post['urls']['link'][0], post);
             }
-            /*
-            else if (post['urls']['message']) {
-
-            } else if (post['urls']['description']) {
-
-            } else {
-                // just add the post into our array 
+            if (post['urls']['message'] !== undefined) {
+                initScraping(post['urls']['message'][0], post);
             }
-            */
+            if (post['urls']['description'] !== undefined) {
+                initScraping(post['urls']['description'][0], post);
+            }
+            if (i === posts.length - 1) {
+                console.log(" WOOOOH ")
+            }
         }
     },
 
+    // with link urls - 473
+    // with link desc - 409
+    // with link message - 233
+    // without -
 
     storeMetadata: function (post, index) {
         //        console.log("storing metadata\n")
-        console.log(index);
+        this.defaults.scrapedPosts.push(post);
+        //        debug("post length ", this.defaults.scrapedPosts.length)
+        //        console.log("post length ", index, "\n"); 
+        if (index > 309) {
+            debug("scraped posts ", this.defaults.scrapedPosts[310]);
+            debug("original posts ", this.posts[310]);
+        }
     }
 }
 

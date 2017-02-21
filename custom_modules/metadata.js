@@ -11,6 +11,12 @@ var scrape = require('html-metadata'),
     eventEmitter = new events.EventEmitter(),
     moment = require('moment'); // to reformat date/time so we can understand
 
+var debug = function (name, input) {
+    console.log("\n\n ======== ", name, " ========");
+    console.log(input);
+    console.log("================================\n\n");
+}
+
 //    , url = "http://www.billboard.com/articles/columns/hip-hop/7480161/frank-ocean-visually-stunning-nikes-video-endless-boys-dont-cry-asap-rocky-apple-music";
 //scrape(url).then(function (metadata) {
 //    console.log("wtf", metadata);
@@ -34,7 +40,9 @@ function MetaDataRetrieval() {
             openGraph: {
 
             }
-        }
+        },
+        iterator: 0,
+        postsLength: 0
     }
 }
 
@@ -56,25 +64,35 @@ MetaDataRetrieval.prototype = {
     },
 
     scrapePosts: function (posts) {
-        console.log("scraping posts for metadata");
-        //        console.log(posts[22]);
+
         var scrapedPosts = [],
             sPArray = this.defaults.scrapedPosts,
             self = this,
             doNothing = function () {}, // does nothing
             // scrape it and save the open graph data
-            initScraping = function (url, newPost) {
+            initScraping = function (url, newPost, index) {
+                var self = this;
+                this.index = index;
+                scrape.prototype.index = index;
                 scrape(url, function (error, metadata) {
+
+                    //                    console.log("this is what the index is: ", this.index);
+                    console.log("this is what the index is: ", scrape.prototype.index);
                     if (error) {
+                        //                        console.log("==== error ====\n");
+                        //                        console.log(error.name);
+                        //                        console.log("================\n");
                         return;
                     } else if (metadata) {
+                        newPost.openGraph = metadata.openGraph;
+                        //                        self.storeData(newPost, index);
 
-                        if (newPost) {
-                            newPost.openGraph = metadata.openGraph;
-                            return newPost;
-                        } else {
-                            return;
-                        }
+                        //                        if (newPost) {
+                        //                            newPost.openGraph = metadata.openGraph;
+                        //                            return newPost;
+                        //                        } else {
+                        //                            return;
+                        //                        }
                         // then we create data object that will store all the necessary information in order to create the ultimate post 
                         // console.log("----------------------- \n", newPost, "----------------------- \n\n");
                         //                        console.log(scrapedPosts.length)
@@ -82,22 +100,18 @@ MetaDataRetrieval.prototype = {
                 });
             };
 
-        // ERRORS
-        // -- 30 - 35
-        // non occur from 
-        // -- 0 - 25 
-        // -- 25 - 30
-        eventEmitter.on('finished', function () {
-            console.log("finished scraping urls from posts")
-                //            console.log(sPArray);
-                //            var x = _.uniq(_.collect(sPArray, function (x) {
-                //                //                console.log(x)
-                //                return JSON.stringify(x);
-                //            }));
-                //            console.log(x)
+        eventEmitter.on('finished', function (postsArray) {
+            console.log("finished scraping urls from posts");
+            //            console.log(sPArray);
+            //            var x = _.uniq(_.collect(sPArray, function (x) {
+            //                //                console.log(x)
+            //                return JSON.stringify(x);
+            //            }));
+            //            console.log(x)
         });
-
-        for (var i = 0; i < posts.length; i++) {
+        var i = 0;
+        this.defaults.postsLength = posts.length;
+        for (i = 0; i < posts.length; i++) {
             var post = posts[i];
             var testPost = {};
             for (var attr in post) {
@@ -126,37 +140,39 @@ MetaDataRetrieval.prototype = {
                         var url = urlsArray[index],
                             type = '';
 
-                        if (url['message']) {
+                        if (url['link']) {
                             //                            newPost = initScraping(url['message'], newPost);
-                            console.log("is a message")
-                                // sPArray.push(initScraping(url['message'], newPost));
-                        } else if (url['link']) {
-                            console.log("is a link")
-                                //                            newPost = initScraping(url['link'], newPost);
-                                // sPArray.push(initScraping(url['link'], newPost));
+                            //                            initScraping(url['link'], newPost, i);
+                            // debug("newPost", newPost);
+                            scrape(url['link'], function (error, metadata) {
+                                if (error) {
+                                    return;
+                                } else if (metadata) {
+                                    newPost.openGraph = metadata.openGraph;
+                                    self.storeData(newPost, self.defaults.iterator);
+                                    self.defaults.iterator++;
+                                }
+                            });
                         }
-                        // TODO !!!! ----- **** 
-                        // what happens if there's no link or message? 
                     }
-                    // sPArray.push(newPost)
                 }
-                testPost = newPost;
             }
-
-            sPArray.push(testPost);
-
-
-            if (i === posts.length - 1) {
-                //                console.log(scrapedPosts);
-                eventEmitter.emit('finished');
-            }
+            // sPArray.push(testPost);
+            //            if (i === posts.length - 1) {
+            //                eventEmitter.emit('finished', sPArray);
+            //            }
         }
 
-        console.log("done scraping and creating new objects \n");
-        //                setTimeout(function () {
-        //                    console.log(scrapedPosts);
-        //                }, 10000)
-
+    },
+    storeData: function (data, index) {
+        this.defaults.scrapedPosts.push(data);
+        console.log("posts length ", this.defaults.iterator);
+        console.log("index ", index);
+        // TODO 
+        // figure out how to make a callback when the iterator is done
+        if (index >= this.defaults.postsLength) {
+            debug("we have reached the end", this.defaults.scrapedPosts.length);
+        }
     }
 }
 

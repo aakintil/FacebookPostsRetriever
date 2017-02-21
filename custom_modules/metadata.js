@@ -96,7 +96,7 @@ MetaDataRetrieval.prototype = {
         updatedPosts = this.createNewDataStructure(posts);
 
         // now we have to figure out a way of storing the metadata 
-        this.storeMetadata(updatedPosts);
+        this.getMetadata(updatedPosts);
     },
 
     createNewDataStructure: function (posts) {
@@ -118,7 +118,7 @@ MetaDataRetrieval.prototype = {
                     openGraph: {}
                 };
             }
-            
+
             var p = newPost['urls'],
                 tempObj = {};
             for (var j in p) {
@@ -138,11 +138,44 @@ MetaDataRetrieval.prototype = {
         return updatedPosts;
     },
 
-    storeMetadata: function (posts) {
+    getMetadata: function (posts) {
+        var self = this,
+            initScraping = function (url, post, index) {
+                scrape(url, function (error, metadata) {
+                    if (error) {
+                        // console.log(error.name, "\n\n")
+                        return;
+                    } else if (metadata) {
+                        post.openGraph = metadata.openGraph;
+                        self.defaults.iterator++;
+                        self.storeMetadata(post, index);
+                    }
+                });
+            };
 
         for (var i = 0; i < posts.length; i++) {
+            var post = posts[i];
 
+            // go through and only scrape one url attribute. 
+            if (post['urls']['link'][0]) {
+                initScraping(post['urls']['link'][0], post, self.defaults.iterator);
+            }
+            /*
+            else if (post['urls']['message']) {
+
+            } else if (post['urls']['description']) {
+
+            } else {
+                // just add the post into our array 
+            }
+            */
         }
+    },
+
+
+    storeMetadata: function (post, index) {
+        //        console.log("storing metadata\n")
+        console.log(index);
     }
 }
 

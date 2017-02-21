@@ -151,11 +151,13 @@ MetaDataRetrieval.prototype = {
                                 } else if (metadata) {
                                     newPost.openGraph = metadata.openGraph;
                                     self.storeData(newPost, self.defaults.iterator);
+                                    self.defaults.iterator++;
                                     return;
-
                                 }
                             });
-                        } else if (url['message']) {
+                        }
+                        /*
+                        else if (url['message']) {
                             scrape(url['message'], function (error, metadata) {
                                 if (error) {
                                     return;
@@ -179,6 +181,7 @@ MetaDataRetrieval.prototype = {
                         } else {
                             self.storeData(newPost, self.defaults.iterator);
                         }
+                        */
                     }
                 }
             }
@@ -186,22 +189,37 @@ MetaDataRetrieval.prototype = {
             //            if (i === posts.length - 1) {
             //                eventEmitter.emit('finished', sPArray);
             //            }
-            self.defaults.iterator++;
+
+            //            self.defaults.iterator++;
         }
 
     },
     storeData: function (data, index) {
-        if (index < 1053) {
-            this.defaults.scrapedPosts.push(data);
-            console.log("posts length ", this.defaults.iterator);
-            console.log("index ", index);
-        } else {
-            for (var i in this.defaults.scrapedPosts) {
-                if (this.defaults.scrapedPosts[i]) {
-
-                }
+        var isNotEmpty = function (obj) {
+            for (var i in obj) {
+                if (i)
+                    return true;
             }
-            debug("finished inserting posts ", this.defaults.scrapedPosts)
+            return false;
+        }
+        console.log(index);
+        this.defaults.scrapedPosts.push(data);
+        if (index < 426) {
+            //            console.log("posts length ", this.defaults.iterator);
+            //            console.log("index ", index);
+        } else {
+            //            debug("finished inserting posts", "------");
+            //            for (var i in this.defaults.scrapedPosts) {
+            //                if (isNotEmpty(this.defaults.scrapedPosts[i].openGraph)) {
+            //                    console.log(this.defaults.scrapedPosts[i])
+            //                }
+            //            }
+            //            console.log(sPArray);
+            var x = _.uniq(_.collect(this.defaults.scrapedPosts, function (x) {
+                return JSON.stringify(x);
+            }));
+            console.log( x.length, " posts are unique"); 
+            debug("finished inserting posts ", x)
             return;
         }
         // TODO 

@@ -25,6 +25,12 @@ function MetaDataRetrieval() {
         postsWithURLsPath: 'data/postsWithURLs.json',
         posts: [],
         scrapedPosts: [],
+        tallies: {
+            links: 0,
+            messages: 0,
+            descriptions: 0,
+            full_pictures: 0
+        },
         newPost: {
             message: "",
             link: "",
@@ -101,7 +107,8 @@ MetaDataRetrieval.prototype = {
     },
 
     createNewDataStructure: function (posts) {
-        var updatedPosts = [];
+        var updatedPosts = [],
+            counts = 0;
         for (i = 0; i < posts.length; i++) {
             var post = posts[i];
 
@@ -119,20 +126,27 @@ MetaDataRetrieval.prototype = {
                     openGraph: {}
                 };
             }
-
             var p = newPost['urls'],
                 tempObj = {};
-            for (var j in p) {
-                // i want to store the keys and values separately in an object so i can call on them rather than looping through an array. 
-                // just removes an extra step down the line
-                tempObj[_.keys(Object.assign({}, p[j]))] = _.values(Object.assign({}, p[j]));
-            }
-            newPost['urls'] = tempObj;
 
+            if (p !== "NO URLS") {
 
-            // we only want posts that have access to metadata 
-            if (post['urls']) {
-                updatedPosts.push(newPost);
+                for (var j in p) {
+                    // i want to store the keys and values separately in an object so i can call on them rather than looping through an array. 
+                    // just removes an extra step down the line
+                    tempObj[_.keys(Object.assign({}, p[j]))] = _.values(Object.assign({}, p[j]));
+                }
+                newPost['urls'] = tempObj;
+
+                // so we can create a better asynchronous callback function later in the code 
+                if (newPost['urls']['link']) this.defaults.tallies.links++;
+                else if (newPost['urls']['message']) this.defaults.tallies.messages++;
+                else if (newPost['urls']['description']) this.defaults.tallies.descriptions++;
+
+                // we only want posts that have access to metadata 
+                if (post['urls']) {
+                    updatedPosts.push(newPost);
+                }
             }
         }
 
@@ -155,24 +169,49 @@ MetaDataRetrieval.prototype = {
                 });
             };
 
+        var callback = function (self) {
+            debug("CALLBACK!!", "----")
+            debug("posts", self.defaults.scrapedPosts[10]);
+        };
 
+        var index = 0;
         for (var i = 0; i < posts.length; i++) {
             var post = posts[i];
 
             // go through and only scrape one url attribute. 
             if (post['urls']['link'] !== undefined) {
-                initScraping(post['urls']['link'][0], post);
+                var url = post['urls']['link'][0];
+                (function (url, post) {
+                    scrape(url, function (error, metadata) {
+                        if (error) {
+                            // console.log(error.name, "\n\n")
+                        } else if (metadata) {
+                            post.openGraph = metadata.openGraph;
+                            self.defaults.scrapedPosts.push(post);
+                        }
+                        console.log(".");
+                        if (++index === self.defaults.tallies.links) {
+                            callback(self);
+                        }
+                    });
+                })(url, post);
             }
-            if (post['urls']['message'] !== undefined) {
-                initScraping(post['urls']['message'][0], post);
-            }
-            if (post['urls']['description'] !== undefined) {
-                initScraping(post['urls']['description'][0], post);
-            }
-            if (i === posts.length - 1) {
-                console.log(" WOOOOH ")
-            }
+
+            //            if (post['urls']['link'] !== undefined) {
+            //                initScraping(post['urls']['link'][0], post);
+            //            }
+            //            if (post['urls']['message'] !== undefined) {
+            //                initScraping(post['urls']['message'][0], post);
+            //            }
+            //            if (post['urls']['description'] !== undefined) {
+            //                initScraping(post['urls']['description'][0], post);
+            //            }
+            //            if (i === posts.length - 1) {
+            //                console.log(" WOOOOH ")
+            //            }
         }
+
+        console.log(counts)
     },
 
     // with link urls - 473
@@ -183,12 +222,6 @@ MetaDataRetrieval.prototype = {
     storeMetadata: function (post, index) {
         //        console.log("storing metadata\n")
         this.defaults.scrapedPosts.push(post);
-        //        debug("post length ", this.defaults.scrapedPosts.length)
-        //        console.log("post length ", index, "\n"); 
-        if (index > 309) {
-            debug("scraped posts ", this.defaults.scrapedPosts[310]);
-            debug("original posts ", this.posts[310]);
-        }
     }
 }
 

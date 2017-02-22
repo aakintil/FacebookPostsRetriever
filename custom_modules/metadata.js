@@ -9,8 +9,6 @@ var scrape = require('html-metadata'),
     events = require('events'),
     _ = require('underscore'),
     eventEmitter = new events.EventEmitter(),
-    _MESSAGES = [],
-    _LINKS = [],
     moment = require('moment'); // to reformat date/time so we can understand
 
 
@@ -178,13 +176,11 @@ MetaDataRetrieval.prototype = {
                 });
             };
 
-        var links = function () {
-            debug("links have...", _LINKS.length);
-        };
-        var messages = function () {
-            debug("messages have...", _MESSAGES.length);
-        };
 
+        var endScraping = function (posts) {
+            // now do we push the posts to the json file? 
+            debug("messages have...", self.defaults.scrapedPosts[10]);
+        }
         eventEmitter.on("final", function () {
             debug("total message posts", _MESSAGES.length);
             debug("total link posts", _LINKS.length);
@@ -195,43 +191,40 @@ MetaDataRetrieval.prototype = {
         for (var i = 0; i < posts.length; i++) {
             var post = posts[i];
 
-            if (post['urls']['link'] !== undefined) {
-                var url = post['urls']['link'][0];
-                (function (url, post) {
-                    scrape(url, function (error, metadata) {
-                        if (error) {
-                            // console.log(error.name, "\n\n")
-                        } else if (metadata) {
-                            post.openGraph = metadata.openGraph;
-                            _LINKS.push(post);
-                        }
-                        if (++index >= (self.defaults.tallies.links + self.defaults.tallies.messages)) {
-                            links();
-                            //                            eventEmitter.emit("final");
-                        }
-                        console.log(index + '*');
-                    });
-                })(url, post);
+            if (post['urls'] !== undefined) {
+
+                var urls = post['urls'],
+                    type = "";
+
+                if (urls['link'] !== undefined) {
+                    type = 'link';
+                } else if (urls['message'] !== undefined) {
+                    type = 'message';
+                } else
+                    type = null;
+
+                if (type !== null) {
+                    var url = urls[type][0];
+                    (function (url, post) {
+                        scrape(url, function (error, metadata) {
+
+                            if (error) {
+                                // console.log(error.name, "\n\n")
+                            } else {
+                                if (metadata) {
+                                    post.openGraph = metadata.openGraph;
+                                    self.defaults.scrapedPosts.push(post);
+                                }
+                            }
+
+                            if (++index >= (self.defaults.tallies.links + self.defaults.tallies.messages)) {
+                                endScraping(self.defaults.scrapedPosts);
+                            }
+                        });
+                    })(url, post);
+                }
             }
-            // go through and only scrape one url attribute. 
-            // else move onto the messages attribute and try those
-            else if (post['urls']['message'] !== undefined) {
-                var url = post['urls']['message'][0];
-                (function (url, post) {
-                    scrape(url, function (error, metadata) {
-                        if (error) {
-                            // console.log(error.name, "\n\n")
-                        } else if (metadata) {
-                            post.openGraph = metadata.openGraph;
-                            _MESSAGES.push(post);
-                        }
-                        if (++index >= (self.defaults.tallies.links + self.defaults.tallies.messages)) {
-                            messages();
-                        }
-                        console.log(index + '-');
-                    });
-                })(url, post);
-            }
+
         }
     },
 

@@ -163,34 +163,27 @@ MetaDataRetrieval.prototype = {
     getMetadata: function (posts) {
         this.posts = posts;
         var self = this,
-            initScraping = function (url, post) {
-                scrape(url, function (error, metadata) {
-                    if (error) {
-                        // console.log(error.name, "\n\n")
-                        return;
-                    } else if (metadata) {
-                        post.openGraph = metadata.openGraph;
-                        self.storeMetadata(post, self.defaults.iterator);
-                        self.defaults.iterator++;
-                    }
-                });
-            };
+            status = ".",
+            endScraping = function (posts) {
+                // now do we push the posts to the json file? 
+                var posts = self.defaults.scrapedPosts;
+                var oGD = 0,
+                    noOGD = 0;
+                for (var i in posts) {
+                    if (posts[i].openGraph === "NO OPEN GRAPH DATA") {
+                        noOGD++;
+                    } else oGD++;
+                }
+                debug("SUCCESS! we now have __ posts with open graph data", oGD);
+                self.savePostsToFile(posts);
+            }
 
-
-        var endScraping = function (posts) {
-            // now do we push the posts to the json file? 
-            debug("messages have...", self.defaults.scrapedPosts[10]);
-        }
-        eventEmitter.on("final", function () {
-            debug("total message posts", _MESSAGES.length);
-            debug("total link posts", _LINKS.length);
-        });
 
         index = 0;
-        var count = 0;
+        var count = 0,
+            statusCounter = 0;
         for (var i = 0; i < posts.length; i++) {
             var post = posts[i];
-
             if (post['urls'] !== undefined) {
 
                 var urls = post['urls'],
@@ -208,14 +201,20 @@ MetaDataRetrieval.prototype = {
                     (function (url, post) {
                         scrape(url, function (error, metadata) {
 
+                            // just so we can see that it's working
+                            if (statusCounter % 50 === 0) {
+                                status += ".";
+                                process.stdout.write(status);
+                            }
+                            ++statusCounter;
                             if (error) {
-                                // console.log(error.name, "\n\n")
+                                post.openGraph = "NO OPEN GRAPH DATA";
                             } else {
                                 if (metadata) {
                                     post.openGraph = metadata.openGraph;
-                                    self.defaults.scrapedPosts.push(post);
                                 }
                             }
+                            self.defaults.scrapedPosts.push(post);
 
                             if (++index >= (self.defaults.tallies.links + self.defaults.tallies.messages)) {
                                 endScraping(self.defaults.scrapedPosts);
@@ -224,19 +223,21 @@ MetaDataRetrieval.prototype = {
                     })(url, post);
                 }
             }
-
         }
     },
 
-    // with link urls - 473
-    // with link desc - 409
-    // with link message - 233
-    // without -
-
-    storeMetadata: function (post, index) {
-        //        console.log("storing metadata\n")
-        this.defaults.scrapedPosts.push(post);
-    }
+    savePostsToFile: function (posts, path) {
+        console.log("Saving updated post models with open graph data to a file ");
+        fs.writeFile('data/openGraphPosts.json', JSON.stringify(posts), function (err) {
+            console.warn("\n ...exporting posts with urls to a json file")
+            if (err) {
+                console.error('there was an error outputting the file');
+            } else {
+                console.log("Output saved to data/openGraphPosts.json");
+                process.exit(1);
+            }
+        });
+    },
 }
 
 

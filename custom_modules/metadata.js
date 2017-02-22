@@ -9,7 +9,10 @@ var scrape = require('html-metadata'),
     events = require('events'),
     _ = require('underscore'),
     eventEmitter = new events.EventEmitter(),
+    _MESSAGES = [],
+    _LINKS = [],
     moment = require('moment'); // to reformat date/time so we can understand
+
 
 var debug = function (name, input) {
     console.log("\n\n ======== ", name, " ========");
@@ -25,6 +28,8 @@ function MetaDataRetrieval() {
         postsWithURLsPath: 'data/postsWithURLs.json',
         posts: [],
         scrapedPosts: [],
+        messages: [],
+        links: [],
         tallies: {
             links: 0,
             messages: 0,
@@ -173,15 +178,16 @@ MetaDataRetrieval.prototype = {
                 });
             };
 
-        var links = function (self, type) {
-            debug("links have...", self.defaults.scrapedPosts.length);
+        var links = function () {
+            debug("links have...", _LINKS.length);
         };
-        var messages = function (self, type) {
-            debug("messages have...", self.defaults.scrapedPosts.length);
+        var messages = function () {
+            debug("messages have...", _MESSAGES.length);
         };
 
         eventEmitter.on("final", function () {
-            debug("total posts", self.defaults.scrapedPosts.length);
+            debug("total message posts", _MESSAGES.length);
+            debug("total link posts", _LINKS.length);
         });
 
         index = 0;
@@ -197,38 +203,35 @@ MetaDataRetrieval.prototype = {
                             // console.log(error.name, "\n\n")
                         } else if (metadata) {
                             post.openGraph = metadata.openGraph;
-                            self.defaults.scrapedPosts.push(post);
+                            _LINKS.push(post);
                         }
                         if (++index >= (self.defaults.tallies.links + self.defaults.tallies.messages)) {
-                            links(self, "links");
-                            eventEmitter.emit("final");
+                            links();
+                            //                            eventEmitter.emit("final");
                         }
                         console.log(index + '*');
                     });
                 })(url, post);
             }
-
             // go through and only scrape one url attribute. 
-            else { // else move onto the messages attribute and try those
-                if (post['urls']['message'] !== undefined) {
-                    var url = post['urls']['message'][0];
-                    (function (url, post) {
-                        scrape(url, function (error, metadata) {
-                            if (error) {
-                                // console.log(error.name, "\n\n")
-                            } else if (metadata) {
-                                post.openGraph = metadata.openGraph;
-                                self.defaults.scrapedPosts.push(post);
-                            }
-                            if (++index >= (self.defaults.tallies.links + self.defaults.tallies.messages)) {
-                                messages(self, "messages");
-                            }
-                            console.log(index + '-');
-                        });
-                    })(url, post);
-                }
+            // else move onto the messages attribute and try those
+            else if (post['urls']['message'] !== undefined) {
+                var url = post['urls']['message'][0];
+                (function (url, post) {
+                    scrape(url, function (error, metadata) {
+                        if (error) {
+                            // console.log(error.name, "\n\n")
+                        } else if (metadata) {
+                            post.openGraph = metadata.openGraph;
+                            _MESSAGES.push(post);
+                        }
+                        if (++index >= (self.defaults.tallies.links + self.defaults.tallies.messages)) {
+                            messages();
+                        }
+                        console.log(index + '-');
+                    });
+                })(url, post);
             }
-
         }
     },
 

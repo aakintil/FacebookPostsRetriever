@@ -140,8 +140,12 @@ MetaDataRetrieval.prototype = {
 
                 // so we can create a better asynchronous callback function later in the code 
                 if (newPost['urls']['link']) this.defaults.tallies.links++;
-                else if (newPost['urls']['message']) this.defaults.tallies.messages++;
-                else if (newPost['urls']['description']) this.defaults.tallies.descriptions++;
+                else {
+                    if (newPost['urls']['message']) this.defaults.tallies.messages++;
+                    else {
+                        if (newPost['urls']['description']) this.defaults.tallies.descriptions++
+                    }
+                }
 
                 // we only want posts that have access to metadata 
                 if (post['urls']) {
@@ -169,18 +173,37 @@ MetaDataRetrieval.prototype = {
                 });
             };
 
-        var callback = function (self) {
-            debug("CALLBACK!!", "----")
-            debug("posts", self.defaults.scrapedPosts[10]);
+        var callback = function (self, type) {
+            debug("CALLBACK!!", "----");
+            var statement = "finshed getting " + type + " post urls ";
+            debug(statement, self.defaults.scrapedPosts.length);
         };
 
-        var index = 0;
+        index = 0;
+        var count = 0;
         for (var i = 0; i < posts.length; i++) {
             var post = posts[i];
 
             // go through and only scrape one url attribute. 
-            if (post['urls']['link'] !== undefined) {
-                var url = post['urls']['link'][0];
+            //            if (post['urls']['link'] !== undefined) {
+            //                var url = post['urls']['link'][0];
+            //                (function (url, post) {
+            //                    scrape(url, function (error, metadata) {
+            //                        if (error) {
+            //                            // console.log(error.name, "\n\n")
+            //                        } else if (metadata) {
+            //                            post.openGraph = metadata.openGraph;
+            //                            self.defaults.scrapedPosts.push(post);
+            //                        }
+            //                        console.log(".");
+            //                        if (++index === self.defaults.tallies.links) {
+            //                            callback(self, "links");
+            //                        }
+            //                    });
+            //                })(url, post);
+            //            } else { // else move onto the messages attribute and try those
+            if (post['urls']['message'] !== undefined) {
+                var url = post['urls']['message'][0];
                 (function (url, post) {
                     scrape(url, function (error, metadata) {
                         if (error) {
@@ -189,13 +212,14 @@ MetaDataRetrieval.prototype = {
                             post.openGraph = metadata.openGraph;
                             self.defaults.scrapedPosts.push(post);
                         }
-                        console.log(".");
-                        if (++index === self.defaults.tallies.links) {
-                            callback(self);
+                        if (++index === self.defaults.tallies.messages) {
+                            callback(self, "messages");
                         }
+                        console.log(index + '-');
                     });
                 })(url, post);
             }
+            //            }
 
             //            if (post['urls']['link'] !== undefined) {
             //                initScraping(post['urls']['link'][0], post);
@@ -210,8 +234,6 @@ MetaDataRetrieval.prototype = {
             //                console.log(" WOOOOH ")
             //            }
         }
-
-        console.log(counts)
     },
 
     // with link urls - 473

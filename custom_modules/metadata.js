@@ -173,37 +173,24 @@ MetaDataRetrieval.prototype = {
                 });
             };
 
-        var callback = function (self, type) {
-            debug("CALLBACK!!", "----");
-            var statement = "finshed getting " + type + " post urls ";
-            debug(statement, self.defaults.scrapedPosts.length);
+        var links = function (self, type) {
+            debug("links have...", self.defaults.scrapedPosts.length);
         };
+        var messages = function (self, type) {
+            debug("messages have...", self.defaults.scrapedPosts.length);
+        };
+
+        eventEmitter.on("final", function () {
+            debug("total posts", self.defaults.scrapedPosts.length);
+        });
 
         index = 0;
         var count = 0;
         for (var i = 0; i < posts.length; i++) {
             var post = posts[i];
 
-            // go through and only scrape one url attribute. 
-            //            if (post['urls']['link'] !== undefined) {
-            //                var url = post['urls']['link'][0];
-            //                (function (url, post) {
-            //                    scrape(url, function (error, metadata) {
-            //                        if (error) {
-            //                            // console.log(error.name, "\n\n")
-            //                        } else if (metadata) {
-            //                            post.openGraph = metadata.openGraph;
-            //                            self.defaults.scrapedPosts.push(post);
-            //                        }
-            //                        console.log(".");
-            //                        if (++index === self.defaults.tallies.links) {
-            //                            callback(self, "links");
-            //                        }
-            //                    });
-            //                })(url, post);
-            //            } else { // else move onto the messages attribute and try those
-            if (post['urls']['message'] !== undefined) {
-                var url = post['urls']['message'][0];
+            if (post['urls']['link'] !== undefined) {
+                var url = post['urls']['link'][0];
                 (function (url, post) {
                     scrape(url, function (error, metadata) {
                         if (error) {
@@ -212,27 +199,36 @@ MetaDataRetrieval.prototype = {
                             post.openGraph = metadata.openGraph;
                             self.defaults.scrapedPosts.push(post);
                         }
-                        if (++index === self.defaults.tallies.messages) {
-                            callback(self, "messages");
+                        if (++index >= (self.defaults.tallies.links + self.defaults.tallies.messages)) {
+                            links(self, "links");
+                            eventEmitter.emit("final");
                         }
-                        console.log(index + '-');
+                        console.log(index + '*');
                     });
                 })(url, post);
             }
-            //            }
 
-            //            if (post['urls']['link'] !== undefined) {
-            //                initScraping(post['urls']['link'][0], post);
-            //            }
-            //            if (post['urls']['message'] !== undefined) {
-            //                initScraping(post['urls']['message'][0], post);
-            //            }
-            //            if (post['urls']['description'] !== undefined) {
-            //                initScraping(post['urls']['description'][0], post);
-            //            }
-            //            if (i === posts.length - 1) {
-            //                console.log(" WOOOOH ")
-            //            }
+            // go through and only scrape one url attribute. 
+            else { // else move onto the messages attribute and try those
+                if (post['urls']['message'] !== undefined) {
+                    var url = post['urls']['message'][0];
+                    (function (url, post) {
+                        scrape(url, function (error, metadata) {
+                            if (error) {
+                                // console.log(error.name, "\n\n")
+                            } else if (metadata) {
+                                post.openGraph = metadata.openGraph;
+                                self.defaults.scrapedPosts.push(post);
+                            }
+                            if (++index >= (self.defaults.tallies.links + self.defaults.tallies.messages)) {
+                                messages(self, "messages");
+                            }
+                            console.log(index + '-');
+                        });
+                    })(url, post);
+                }
+            }
+
         }
     },
 
